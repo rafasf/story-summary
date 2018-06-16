@@ -10,17 +10,37 @@ type Commit struct {
 	subject string
 	author  string
 	hash    string
-	tag     string
+	tag     TagMatch
+}
+
+type Tag struct {
+	pattern     *regexp.Regexp
+	description string
+}
+
+type TagMatch struct {
+	value  string
+	source Tag
+}
+
+func (tM TagMatch) Description() string {
+	return tM.source.description
+}
+
+func (tM TagMatch) Pattern() *regexp.Regexp {
+	return tM.source.pattern
 }
 
 type CleanMsg func(string) string
 
-func DefaultTagOr(match [][]string) string {
-	if len(match) > 0 {
-		return strings.TrimSpace(match[0][0])
-	} else {
-		return "General"
+func TagOrDefaultGiven(tags []Tag, entry string) TagMatch {
+	for _, tag := range tags {
+		possibleMatch := tag.pattern.FindAllStringSubmatch(entry, -1)
+		if len(possibleMatch) > 0 {
+			return TagMatch{strings.TrimSpace(possibleMatch[0][0]), tag}
+		}
 	}
+	return TagMatch{"General", Tag{regexp.MustCompile(`^General$`), "General"}}
 }
 
 func CleanMessage(re *regexp.Regexp) func(string) string {
@@ -33,23 +53,23 @@ func CleanMessageGiven(re *regexp.Regexp, subject string) string {
 	return re.ReplaceAllString(subject, "")
 }
 
-func CommitFrom(tag string, logEntry string, separator string, cleaner CleanMsg) Commit {
+func CommitFrom(tagMatch TagMatch, logEntry string, separator string, cleaner CleanMsg) Commit {
 	parts := strings.Split(logEntry, separator)
 	subject, author, hash := parts[0], parts[1], parts[2]
-	return Commit{cleaner(subject), author, hash, tag}
+	return Commit{cleaner(subject), author, hash, tagMatch}
 }
 
-func CommitsFrom(logEntries []string, tag_re *regexp.Regexp, separator string) []Commit {
+func CommitsFrom(logEntries []string, tags []Tag, separator string) []Commit {
 	var commits []Commit
 	for _, logEntry := range logEntries {
-		possibleTag := tag_re.FindAllStringSubmatch(logEntry, -1)
+		tagMatch := TagOrDefaultGiven(tags, logEntry)
 		commits = append(
 			commits,
 			CommitFrom(
-				DefaultTagOr(possibleTag),
+				tagMatch,
 				logEntry,
 				separator,
-				CleanMessage(tag_re)))
+				CleanMessage(tagMatch.Pattern())))
 	}
 	return commits
 }
@@ -63,8 +83,13 @@ func main() {
 		"US13791 Suspendisse dignissim hendrerit porttitor|Rafael Ferreira|cd4730f",
 		"chore: Initial commit|Rafael Ferreira|a041e85"}
 
-	re, _ := regexp.Compile(`(US[0-9]+)\s*|(EFFIG-[0-9]+)\s*`)
-	commits := CommitsFrom(logEntries, re, "|")
+	tags := []Tag{
+		Tag{regexp.MustCompile(`(US[0-9]+)\s*`), "Story"},
+		Tag{regexp.MustCompile(`(EFFIG-[0-9]+)\s*`), "Story"},
+		Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
+	}
+
+	commits := CommitsFrom(logEntries, tags, "|")
 
 	for _, commit := range commits {
 		fmt.Println(commit)
