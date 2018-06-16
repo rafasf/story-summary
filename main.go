@@ -74,6 +74,21 @@ func CommitsFrom(logEntries []string, tags []Tag, separator string) []Commit {
 	return commits
 }
 
+func ByTag(commits []Commit) map[string][]Commit {
+	commitsByTag := make(map[string][]Commit)
+	for _, commit := range commits {
+		value := commit.tag.value
+		commitsByTag[value] = append(commitsByTag[value], commit)
+	}
+	return commitsByTag
+}
+
+type Tracker struct {
+	name     string
+	baseUrl  string
+	patterns *[]regexp.Regexp
+}
+
 func main() {
 	logEntries := []string{
 		"Add other to d|Rafael Ferreira|4ddf81f",
@@ -89,9 +104,36 @@ func main() {
 		Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
 	}
 
+	trackers := []Tracker{
+		Tracker{
+			"Jira",
+			"http://jira.com",
+			[]regexp.Regexp{
+				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
+			},
+		},
+		Tracker{
+			"Rally",
+			"http://rally.com",
+			[]regexp.Regexp{
+				regexp.MustCompile(`(US[0-9])\s*`),
+				regexp.MustCompile(`(DE[0-9])\s*`),
+			},
+		},
+	}
+
 	commits := CommitsFrom(logEntries, tags, "|")
 
 	for _, commit := range commits {
 		fmt.Println(commit)
+	}
+
+	for k, v := range ByTag(commits) {
+		fmt.Printf("key: %s\n", k)
+		for _, c := range v {
+			fmt.Println(c)
+		}
+
+		fmt.Println("")
 	}
 }

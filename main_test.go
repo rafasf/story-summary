@@ -79,3 +79,17 @@ func TestTagOrDefaultGivenReturnsGeneralTagMatchWhenNoTag(t *testing.T) {
 
 	assert.Equal(t, expectedTag, match)
 }
+
+func TestByTagsReturnsCommitsGroupedByTagValue(t *testing.T) {
+	commits := []Commit{
+		Commit{"Add other to d", "Bob", "4ddf81f", TagMatch{"General", GeneralTag()}},
+		Commit{"Add new to d", "John", "a319639", TagMatch{"US234", SomeTags()[0]}},
+		Commit{"First from other tracker", "Mary", "f861b45", TagMatch{"EFFIG-401", SomeTags()[1]}},
+	}
+
+	groups := ByTag(commits)
+
+	assert.Equal(t, groups["US234"][0].subject, "Add new to d")
+	assert.Equal(t, groups["EFFIG-401"][0].subject, "First from other tracker")
+	assert.Equal(t, groups["General"][0].subject, "Add other to d")
+}
