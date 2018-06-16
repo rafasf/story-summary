@@ -93,3 +93,27 @@ func TestByTagsReturnsCommitsGroupedByTagValue(t *testing.T) {
 	assert.Equal(t, groups["EFFIG-401"][0].subject, "First from other tracker")
 	assert.Equal(t, groups["General"][0].subject, "Add other to d")
 }
+
+func TestTrackerGivenReturnsProperTrackerForStorySummaryLookup(t *testing.T) {
+	trackers := []Tracker{
+		Tracker{
+			"Jira",
+			"http://jira.com",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
+			},
+		},
+		Tracker{
+			"Rally",
+			"http://rally.com",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`(US[0-9])\s*`),
+				regexp.MustCompile(`(DE[0-9])\s*`),
+			},
+		},
+	}
+
+	assert.Equal(t, TrackerGiven("EFFIG-401", trackers).name, "Jira")
+	assert.Equal(t, TrackerGiven("US123", trackers).name, "Rally")
+	assert.Equal(t, TrackerGiven("DE123", trackers).name, "Rally")
+}

@@ -86,7 +86,25 @@ func ByTag(commits []Commit) map[string][]Commit {
 type Tracker struct {
 	name     string
 	baseUrl  string
-	patterns *[]regexp.Regexp
+	patterns []*regexp.Regexp
+}
+
+func (t Tracker) AllPatters() *regexp.Regexp {
+	var allPatterns []string
+	for _, pattern := range t.patterns {
+		allPatterns = append(allPatterns, pattern.String())
+	}
+	return regexp.MustCompile(strings.Join(allPatterns, "|"))
+}
+
+func TrackerGiven(tag string, trackers []Tracker) Tracker {
+	for _, tracker := range trackers {
+		match := tracker.AllPatters().FindAllStringSubmatch(tag, -1)
+		if len(match) > 0 {
+			return tracker
+		}
+	}
+	return Tracker{}
 }
 
 func main() {
@@ -104,23 +122,23 @@ func main() {
 		Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
 	}
 
-	trackers := []Tracker{
-		Tracker{
-			"Jira",
-			"http://jira.com",
-			[]regexp.Regexp{
-				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
-			},
-		},
-		Tracker{
-			"Rally",
-			"http://rally.com",
-			[]regexp.Regexp{
-				regexp.MustCompile(`(US[0-9])\s*`),
-				regexp.MustCompile(`(DE[0-9])\s*`),
-			},
-		},
-	}
+	//trackers := []Tracker{
+	//	Tracker{
+	//		"Jira",
+	//		"http://jira.com",
+	//		[]regexp.Regexp{
+	//			regexp.MustCompile(`(EFFIG-[0-9])\s*`),
+	//		},
+	//	},
+	//	Tracker{
+	//		"Rally",
+	//		"http://rally.com",
+	//		[]regexp.Regexp{
+	//			regexp.MustCompile(`(US[0-9])\s*`),
+	//			regexp.MustCompile(`(DE[0-9])\s*`),
+	//		},
+	//	},
+	//}
 
 	commits := CommitsFrom(logEntries, tags, "|")
 
