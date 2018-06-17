@@ -10,10 +10,10 @@ import (
 
 func TheTracker() tracker.LookupTracker {
 	return tracker.Jira{
-		tracker.Tracker{
-			"Jira",
-			"http://jira.com",
-			[]*regexp.Regexp{
+		Info: tracker.Tracker{
+			Name:    "Jira",
+			BaseURL: "http://jira.com",
+			Patterns: []*regexp.Regexp{
 				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
 			},
 		},
@@ -24,8 +24,8 @@ func TestStoryForReturnsStoryGivenIdentifier(t *testing.T) {
 
 	story := jira.StoryFor("EFFIG-401")
 	expectedStory := tracker.Story{
-		"EFFIG-401",
-		"The Cool Summary",
+		Identifier: "EFFIG-401",
+		Summary:    "The Cool Summary",
 	}
 
 	assert.Equal(t, expectedStory, story)
@@ -41,6 +41,6 @@ func TestDetailsReturnsJiraInformation(t *testing.T) {
 	jira := TheTracker().Details()
 
 	assert.Equal(t, "Jira", jira.Name)
-	assert.Equal(t, "http://jira.com", jira.BaseUrl)
+	assert.Equal(t, "http://jira.com", jira.BaseURL)
 	assert.Equal(t, "(EFFIG-[0-9])\\s*", jira.Patterns[0].String())
 }

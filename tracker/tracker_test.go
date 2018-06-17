@@ -10,10 +10,10 @@ import (
 
 func JiraTracker() tracker.LookupTracker {
 	return tracker.Jira{
-		tracker.Tracker{
-			"Jira",
-			"http://jira.com",
-			[]*regexp.Regexp{
+		Info: tracker.Tracker{
+			Name:    "Jira",
+			BaseURL: "http://jira.com",
+			Patterns: []*regexp.Regexp{
 				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
 			},
 		},
@@ -22,10 +22,10 @@ func JiraTracker() tracker.LookupTracker {
 
 func RallyTracker() tracker.LookupTracker {
 	return tracker.Rally{
-		tracker.Tracker{
-			"Rally",
-			"http://rally.com",
-			[]*regexp.Regexp{
+		Info: tracker.Tracker{
+			Name:    "Rally",
+			BaseURL: "http://rally.com",
+			Patterns: []*regexp.Regexp{
 				regexp.MustCompile(`(US[0-9])\s*`),
 				regexp.MustCompile(`(DE[0-9])\s*`),
 			},
@@ -36,7 +36,7 @@ func RallyTracker() tracker.LookupTracker {
 func TestTrackerGivenReturnsProperTrackerForStorySummaryLookup(t *testing.T) {
 	trackers := []tracker.LookupTracker{JiraTracker(), RallyTracker()}
 
-	assert.Equal(t, tracker.TrackerGiven("EFFIG-401", trackers).Details().Name, "Jira")
-	assert.Equal(t, tracker.TrackerGiven("US123", trackers).Details().Name, "Rally")
-	assert.Equal(t, tracker.TrackerGiven("DE123", trackers).Details().Name, "Rally")
+	assert.Equal(t, tracker.Given("EFFIG-401", trackers).Details().Name, "Jira")
+	assert.Equal(t, tracker.Given("US123", trackers).Details().Name, "Rally")
+	assert.Equal(t, tracker.Given("DE123", trackers).Details().Name, "Rally")
 }

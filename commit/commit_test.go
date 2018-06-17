@@ -34,7 +34,7 @@ func TestCommitFromReturnsCleanCommit(t *testing.T) {
 	logEntry := "Tag1 Add other to D|The Author|4ddf81f"
 
 	tagMatch := commit.TagMatch{"Tag1", commit.Tag{regexp.MustCompile(`(Tag1)\s*`), "Story"}}
-	actualCommit := commit.CommitFrom(tagMatch, logEntry, "|", commit.CleanMessage(tagMatch.Pattern()))
+	actualCommit := commit.From(tagMatch, logEntry, "|", commit.CleanMessage(tagMatch.Pattern()))
 	expectedCommit := commit.Commit{
 		"Add other to D",
 		"The Author",
