@@ -3,108 +3,23 @@ package main
 import (
 	"fmt"
 	"regexp"
-	"strings"
+
+	"github.com/rafasf/story-summary/commit"
+	"github.com/rafasf/story-summary/tracker"
 )
 
-type Commit struct {
-	subject string
-	author  string
-	hash    string
-	tag     TagMatch
-}
+func SummaryFor(storyIdentifers []string, trackers []tracker.LookupTracker) []string {
+	var summary []string
+	for _, storyId := range storyIdentifers {
+		possibleTracker := tracker.TrackerGiven(storyId, trackers)
 
-type Tag struct {
-	pattern     *regexp.Regexp
-	description string
-}
-
-type TagMatch struct {
-	value  string
-	source Tag
-}
-
-func (tM TagMatch) Description() string {
-	return tM.source.description
-}
-
-func (tM TagMatch) Pattern() *regexp.Regexp {
-	return tM.source.pattern
-}
-
-type CleanMsg func(string) string
-
-func TagOrDefaultGiven(tags []Tag, entry string) TagMatch {
-	for _, tag := range tags {
-		possibleMatch := tag.pattern.FindAllStringSubmatch(entry, -1)
-		if len(possibleMatch) > 0 {
-			return TagMatch{strings.TrimSpace(possibleMatch[0][0]), tag}
+		if possibleTracker != nil {
+			summary = append(summary, possibleTracker.StoryFor(storyId).Summary)
+		} else {
+			summary = append(summary, "not found")
 		}
 	}
-	return TagMatch{"General", Tag{regexp.MustCompile(`^General$`), "General"}}
-}
-
-func CleanMessage(re *regexp.Regexp) func(string) string {
-	return func(subject string) string {
-		return CleanMessageGiven(re, subject)
-	}
-}
-
-func CleanMessageGiven(re *regexp.Regexp, subject string) string {
-	return re.ReplaceAllString(subject, "")
-}
-
-func CommitFrom(tagMatch TagMatch, logEntry string, separator string, cleaner CleanMsg) Commit {
-	parts := strings.Split(logEntry, separator)
-	subject, author, hash := parts[0], parts[1], parts[2]
-	return Commit{cleaner(subject), author, hash, tagMatch}
-}
-
-func CommitsFrom(logEntries []string, tags []Tag, separator string) []Commit {
-	var commits []Commit
-	for _, logEntry := range logEntries {
-		tagMatch := TagOrDefaultGiven(tags, logEntry)
-		commits = append(
-			commits,
-			CommitFrom(
-				tagMatch,
-				logEntry,
-				separator,
-				CleanMessage(tagMatch.Pattern())))
-	}
-	return commits
-}
-
-func ByTag(commits []Commit) map[string][]Commit {
-	commitsByTag := make(map[string][]Commit)
-	for _, commit := range commits {
-		value := commit.tag.value
-		commitsByTag[value] = append(commitsByTag[value], commit)
-	}
-	return commitsByTag
-}
-
-type Tracker struct {
-	name     string
-	baseUrl  string
-	patterns []*regexp.Regexp
-}
-
-func (t Tracker) AllPatters() *regexp.Regexp {
-	var allPatterns []string
-	for _, pattern := range t.patterns {
-		allPatterns = append(allPatterns, pattern.String())
-	}
-	return regexp.MustCompile(strings.Join(allPatterns, "|"))
-}
-
-func TrackerGiven(tag string, trackers []Tracker) Tracker {
-	for _, tracker := range trackers {
-		match := tracker.AllPatters().FindAllStringSubmatch(tag, -1)
-		if len(match) > 0 {
-			return tracker
-		}
-	}
-	return Tracker{}
+	return summary
 }
 
 func main() {
@@ -116,42 +31,39 @@ func main() {
 		"US13791 Suspendisse dignissim hendrerit porttitor|Rafael Ferreira|cd4730f",
 		"chore: Initial commit|Rafael Ferreira|a041e85"}
 
-	tags := []Tag{
-		Tag{regexp.MustCompile(`(US[0-9]+)\s*`), "Story"},
-		Tag{regexp.MustCompile(`(EFFIG-[0-9]+)\s*`), "Story"},
-		Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
+	tags := []commit.Tag{
+		commit.Tag{regexp.MustCompile(`(US[0-9]+)\s*`), "Story"},
+		commit.Tag{regexp.MustCompile(`(EFFIG-[0-9]+)\s*`), "Story"},
+		commit.Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
 	}
 
-	//trackers := []Tracker{
-	//	Tracker{
-	//		"Jira",
-	//		"http://jira.com",
-	//		[]regexp.Regexp{
-	//			regexp.MustCompile(`(EFFIG-[0-9])\s*`),
-	//		},
-	//	},
-	//	Tracker{
-	//		"Rally",
-	//		"http://rally.com",
-	//		[]regexp.Regexp{
-	//			regexp.MustCompile(`(US[0-9])\s*`),
-	//			regexp.MustCompile(`(DE[0-9])\s*`),
-	//		},
-	//	},
-	//}
+	// trackers := []tracker.LookupTracker{
+	// 	tracker.Jira{
+	// 		tracker.Tracker{
+	// 			"Jira",
+	// 			"http://jira.com",
+	// 			[]*regexp.Regexp{
+	// 				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
+	// 			},
+	// 		},
+	// 	},
+	// 	tracker.Rally{
+	// 		tracker.Tracker{
+	// 			"Rally",
+	// 			"http://rally.com",
+	// 			[]*regexp.Regexp{
+	// 				regexp.MustCompile(`(US[0-9])\s*`),
+	// 				regexp.MustCompile(`(DE[0-9])\s*`),
+	// 			},
+	// 		},
+	// 	},
+	// }
 
-	commits := CommitsFrom(logEntries, tags, "|")
+	commits := commit.CommitsFrom(logEntries, tags, "|")
 
 	for _, commit := range commits {
 		fmt.Println(commit)
 	}
 
-	for k, v := range ByTag(commits) {
-		fmt.Printf("key: %s\n", k)
-		for _, c := range v {
-			fmt.Println(c)
-		}
-
-		fmt.Println("")
-	}
+	//fmt.Println(ByTag(commits).Keys())
 }
