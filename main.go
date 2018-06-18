@@ -5,22 +5,8 @@ import (
 	"regexp"
 
 	"github.com/rafasf/story-summary/commit"
-	"github.com/rafasf/story-summary/tracker"
+	//	"github.com/rafasf/story-summary/tracker"
 )
-
-func SummaryFor(storyIdentifers []string, trackers []tracker.LookupTracker) []string {
-	var summary []string
-	for _, storyId := range storyIdentifers {
-		possibleTracker := tracker.TrackerGiven(storyId, trackers)
-
-		if possibleTracker != nil {
-			summary = append(summary, possibleTracker.StoryFor(storyId).Summary)
-		} else {
-			summary = append(summary, "not found")
-		}
-	}
-	return summary
-}
 
 func main() {
 	logEntries := []string{

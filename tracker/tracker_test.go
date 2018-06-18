@@ -33,7 +33,7 @@ func RallyTracker() tracker.LookupTracker {
 	}
 }
 
-func TestTrackerGivenReturnsProperTrackerForStorySummaryLookup(t *testing.T) {
+func TestGivenReturnsProperTrackerForStorySummaryLookup(t *testing.T) {
 	trackers := []tracker.LookupTracker{JiraTracker(), RallyTracker()}
 
 	assert.Equal(t, tracker.Given("EFFIG-401", trackers).Details().Name, "Jira")
