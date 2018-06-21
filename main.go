@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/rafasf/story-summary/commit"
-	//	"github.com/rafasf/story-summary/tracker"
+	"github.com/rafasf/story-summary/summary"
+	"github.com/rafasf/story-summary/tracker"
 )
 
 func main() {
@@ -23,33 +25,44 @@ func main() {
 		commit.Tag{regexp.MustCompile(`chore:\s*`), "Chore"},
 	}
 
-	// trackers := []tracker.LookupTracker{
-	// 	tracker.Jira{
-	// 		tracker.Tracker{
-	// 			"Jira",
-	// 			"http://jira.com",
-	// 			[]*regexp.Regexp{
-	// 				regexp.MustCompile(`(EFFIG-[0-9])\s*`),
-	// 			},
-	// 		},
-	// 	},
-	// 	tracker.Rally{
-	// 		tracker.Tracker{
-	// 			"Rally",
-	// 			"http://rally.com",
-	// 			[]*regexp.Regexp{
-	// 				regexp.MustCompile(`(US[0-9])\s*`),
-	// 				regexp.MustCompile(`(DE[0-9])\s*`),
-	// 			},
-	// 		},
-	// 	},
-	// }
-
-	commits := commit.CommitsFrom(logEntries, tags, "|")
-
-	for _, commit := range commits {
-		fmt.Println(commit)
+	trackers := []tracker.LookupTracker{
+		tracker.Jira{
+			Info: tracker.Tracker{
+				Name:    "Jira",
+				BaseURL: "http://jira.com",
+				Patterns: []*regexp.Regexp{
+					regexp.MustCompile(`(EFFIG-[0-9])\s*`),
+				},
+			},
+		},
+		tracker.Rally{
+			Info: tracker.Tracker{
+				Name:    "Rally",
+				BaseURL: "http://rally.com",
+				Patterns: []*regexp.Regexp{
+					regexp.MustCompile(`(US[0-9])\s*`),
+					regexp.MustCompile(`(DE[0-9])\s*`),
+				},
+			},
+		},
 	}
 
-	//fmt.Println(ByTag(commits).Keys())
+	var p []string
+	for _, t := range trackers {
+		p = append(p, t.AllPatterns().String())
+	}
+	storyPatterns, _ := regexp.Compile(strings.Join(p, "|"))
+
+	isStory := func(s string) bool {
+		return storyPatterns.MatchString(s)
+	}
+
+	allCommits := commit.CommitsFrom(logEntries, tags, "|")
+	allCommitsByTag := commit.ByTag(allCommits)
+
+	storyIds, generalCommits := summary.StoryIdsAndCommitsFrom(allCommitsByTag, isStory)
+
+	fmt.Println(summary.For(storyIds, trackers))
+	fmt.Println("==========")
+	fmt.Println(generalCommits)
 }

@@ -1,6 +1,7 @@
 package summary
 
 import (
+	"github.com/rafasf/story-summary/commit"
 	"github.com/rafasf/story-summary/tracker"
 )
 
@@ -8,6 +9,26 @@ import (
 // along with its summaries from the tracker.
 type StorySummary struct {
 	Stories []tracker.Story
+}
+
+// StoryIdsAndCommitsFrom returns a unique list of story identifiers and
+// a list of commits that don't belong to any story.
+func StoryIdsAndCommitsFrom(
+	commitsByTag map[string][]commit.Commit,
+	isStory func(string) bool,
+) ([]string, []commit.Commit) {
+	var storyIds []string
+	var generalCommits []commit.Commit
+
+	for tag, commits := range commitsByTag {
+		if isStory(tag) {
+			storyIds = append(storyIds, tag)
+		} else {
+			generalCommits = append(generalCommits, commits...)
+		}
+	}
+
+	return storyIds, generalCommits
 }
 
 // For returns a StorySummary, fetching the summary for each of the stories
