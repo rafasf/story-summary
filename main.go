@@ -47,11 +47,7 @@ func main() {
 		},
 	}
 
-	var p []string
-	for _, t := range trackers {
-		p = append(p, t.AllPatterns().String())
-	}
-	storyPatterns, _ := regexp.Compile(strings.Join(p, "|"))
+	storyPatterns := allStoryPatternsGiven(trackers)
 
 	isStory := func(s string) bool {
 		return storyPatterns.MatchString(s)
@@ -65,4 +61,14 @@ func main() {
 	fmt.Println(summary.For(storyIds, trackers))
 	fmt.Println("==========")
 	fmt.Println(generalCommits)
+}
+
+func allStoryPatternsGiven(trackers LookupTracker) *regexp.Regexp {
+	var p []string
+	for _, t := range trackers {
+		p = append(p, t.AllPatterns().String())
+	}
+	storyPatterns, _ := regexp.Compile(strings.Join(p, "|"))
+
+	return storyPatterns
 }
