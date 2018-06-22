@@ -5,35 +5,29 @@ import (
 	"testing"
 
 	"github.com/rafasf/story-summary/commit"
+	"github.com/rafasf/story-summary/mocks"
 	"github.com/rafasf/story-summary/summary"
 	"github.com/rafasf/story-summary/tracker"
 	"github.com/stretchr/testify/assert"
 )
 
-func JiraTracker() tracker.LookupTracker {
-	return tracker.Jira{
-		Info: tracker.Tracker{
-			Name:    "A Tracker",
-			BaseURL: "http://a-tracker.fake",
-			Patterns: []*regexp.Regexp{
-				regexp.MustCompile(`(A[0-9])\s*`),
-			},
-		},
-	}
-}
-
 func TestForReturnsStorySummariesForIdentifiers(t *testing.T) {
-	trackers := []tracker.LookupTracker{JiraTracker()}
+	aTracker := new(mocks.LookupTracker)
+	trackers := []tracker.LookupTracker{aTracker}
 	identifiers := []string{"A123"}
 
-	storySummaries := summary.For(identifiers, trackers)
-	expectedSummaries := summary.StorySummary{
-		Stories: []tracker.Story{
-			tracker.Story{Summary: "The Cool Summary", Identifier: "A123"},
-		},
+	story := tracker.Story{Summary: "The Cool Summary", Identifier: "A123"}
+	expectedSummary := summary.StorySummary{
+		Stories: []tracker.Story{story},
 	}
 
-	assert.Equal(t, expectedSummaries, storySummaries)
+	aTracker.On("AllPatterns").Return(regexp.MustCompile(`(A[0-9])\s*`))
+	aTracker.On("StoryFor", "A123").Return(story)
+
+	storySummaries := summary.For(identifiers, trackers)
+
+	assert.Equal(t, expectedSummary, storySummaries)
+	aTracker.AssertExpectations(t)
 }
 
 func TestStoryIdsAndCommitsFromReturnsListsWithRespectiveInfo(t *testing.T) {
